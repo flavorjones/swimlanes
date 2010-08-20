@@ -40,12 +40,16 @@ describe Swimlanes::Importer do
         FileUtils.rm_rf @repo_path
       end
 
+      it "default method name to 'swim' and emit it" do
+        @importer.to_js().should =~ %r/function swim\(canvasId\)/
+      end
+
       it "should accept a method name, and emit it" do
-        @importer.to_js("drawSwimlanes").should =~ %r/function drawSwimlanes()/
+        @importer.to_js("drawSwimlanes").should =~ %r/function drawSwimlanes\(canvasId\)/
       end
 
       it "should emit a swimlane variable" do
-        @importer.to_js("drawSwimlanes").should =~ %r/var s = new SwimLanes\(\);/
+        @importer.to_js("drawSwimlanes").should =~ %r/var s = new SwimLanes\(canvasId\);/
       end
 
       context "branches" do

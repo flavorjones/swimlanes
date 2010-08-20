@@ -6,10 +6,10 @@ module Swimlanes
       @path = path
     end
 
-    def to_js method_name
+    def to_js method_name='swim'
       js = []
-      js << "function #{method_name}() {"
-      js << "  var s = new SwimLanes();"
+      js << "function #{method_name}(canvasId) {"
+      js << "  var s = new SwimLanes(canvasId);"
       branches.sort.each_with_index do |branch, j|
         js << "  s.addBranch('#{branch}',#{j});"
       end
