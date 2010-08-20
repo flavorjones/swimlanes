@@ -40,31 +40,67 @@ describe Swimlanes::Importer do
         FileUtils.rm_rf @repo_path
       end
 
-      it "default method name to 'swim' and emit it" do
-        @importer.to_js().should =~ %r/function swim\(canvasId\)/
-      end
-
-      it "should accept a method name, and emit it" do
-        @importer.to_js("drawSwimlanes").should =~ %r/function drawSwimlanes\(canvasId\)/
-      end
-
-      it "should emit a swimlane variable" do
-        @importer.to_js("drawSwimlanes").should =~ %r/var s = new SwimLanes\(canvasId\);/
-      end
-
-      context "branches" do
+      context "multiple branches" do
         before do
           Dir.chdir(@repo_path) do
             run "git checkout -b branch1 master"
             run "git checkout -b branch2 master"
           end
         end
+        
+        it "accepts no arguments and emits all branches" do
+          pending
+          js = @importer.to_js
+          js.should =~ %r/s.addBranch\('branch1',\d+\);/
+          js.should =~ %r/s.addBranch\('branch2',\d+\);/
+          js.should =~ %r/s.addBranch\('master',\d+\);/
+        end
 
-        it "should emit code for branches" do
-          js = @importer.to_js("drawSwimlanes")
+        it "accepts a list of branch names and emits only those branches in order" do
+          js = @importer.to_js 'branch1', 'branch2'
           js.should =~ %r/s.addBranch\('branch1',0\);/
           js.should =~ %r/s.addBranch\('branch2',1\);/
-          js.should =~ %r/s.addBranch\('master',2\);/
+          js.should_not =~ %r/s.addBranch\('master',\d+\);/
+
+          js = @importer.to_js 'branch2', 'master'
+          js.should =~ %r/s.addBranch\('branch2',0\);/
+          js.should =~ %r/s.addBranch\('master',1\);/
+          js.should_not =~ %r/s.addBranch\('branch1',\d+\);/
+
+          js = @importer.to_js 'master', 'branch1'
+          js.should =~ %r/s.addBranch\('master',0\);/
+          js.should =~ %r/s.addBranch\('branch1',1\);/
+          js.should_not =~ %r/s.addBranch\('branch2',\d+\);/
+        end
+
+        it "accepts a list of branch names and silently ignores non-existent branches" do
+          pending
+          js = @importer.to_js 'master', 'foo', 'branch1', 'bar'
+          js.should =~ %r/s.addBranch\('master',0\);/
+          js.should =~ %r/s.addBranch\('branch1',1\);/
+          js.should_not =~ %r/s.addBranch\('branch2',\d+\);/
+          js.should_not =~ %r/s.addBranch\('foo',\d+\);/
+          js.should_not =~ %r/s.addBranch\('bar',\d+\);/
+        end
+
+        it "emits a function named 'swim'" do
+          @importer.to_js.should =~ %r/function swim\(canvasId\)/
+        end
+
+        it "accepts a function name option and emits the function named properly" do
+          @importer.to_js(:function => 'foo').should =~ %r/function foo\(canvasId\)/
+        end
+
+        it "accepts branch names and options" do
+          js = @importer.to_js('master', :function => 'foo')
+          js.should =~ %r/s.addBranch\('master',0\);/
+          js.should_not =~ %r/s.addBranch\('branch1',1\);/
+          js.should_not =~ %r/s.addBranch\('branch2',\d+\);/
+          js.should =~ %r/function foo\(canvasId\)/
+        end
+
+        it "should emit a swimlane variable" do
+          @importer.to_js.should =~ %r/var s = new SwimLanes\(canvasId\);/
         end
       end
     end

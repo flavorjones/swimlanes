@@ -6,24 +6,23 @@ module Swimlanes
       @path = path
     end
 
-    def to_js method_name='swim'
-      js = []
-      js << "function #{method_name}(canvasId) {"
-      js << "  var s = new SwimLanes(canvasId);"
-      branches.sort.each_with_index do |branch, j|
-        js << "  s.addBranch('#{branch}',#{j});"
-      end
-      js << "}"
-      js.join("\n")
+    def to_js *arguments
+      options = arguments.last.is_a?(Hash) ? arguments.pop : {}
+      branches = arguments
+
+      options[:function] ||= 'swim'
+
+      [].tap do |js|
+        js << "function #{options[:function]}(canvasId) {"
+        js << "  var s = new SwimLanes(canvasId);"
+        branches.each_with_index do |branch, j|
+          js << "  s.addBranch('#{branch}',#{j});"
+        end
+        js << "}"
+      end.join("\n")
     end
 
     private
-
-    def branches
-      Dir.chdir(path) do
-        run("git branch | cut -c3-").split
-      end
-    end
 
     def run cmd
       %x(#{cmd})
