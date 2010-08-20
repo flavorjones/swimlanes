@@ -4,7 +4,7 @@ describe Swimlanes::Importer do
   def run cmd
     if $DEBUG
       puts "=> #{cmd}"
-      system(cmd) || raise("command #{cmd} failed")
+      system("#{cmd} 2>&1") || raise("command #{cmd} failed")
     else
       system("#{cmd} > /dev/null 2>&1") || raise("command #{cmd} failed")
     end
@@ -49,7 +49,6 @@ describe Swimlanes::Importer do
         end
         
         it "accepts no arguments and emits all branches" do
-          pending
           js = @importer.to_js
           js.should =~ %r/s.addBranch\('branch1',\d+\);/
           js.should =~ %r/s.addBranch\('branch2',\d+\);/
@@ -101,6 +100,28 @@ describe Swimlanes::Importer do
 
         it "should emit a swimlane variable" do
           @importer.to_js.should =~ %r/var s = new SwimLanes\(canvasId\);/
+        end
+      end
+
+      context "commits and branches" do
+        before do
+          Dir.chdir(@repo_path) do
+            run "touch foo1 && git add foo1"
+            run "git commit -a -m 'commit 1'"
+            run "git checkout -b branch1 master"
+            run "touch foo2 && git add foo2"
+            run "git commit -a -m 'commit 2'"
+            run "git checkout -b branch2 master"
+            run "touch foo3 && git add foo3"
+            run "git commit -a -m 'commit 3'"
+          end
+        end
+
+        context "with no arguments" do
+          it "should order the branches in chronological order of first commit on each" do
+            js = @importer.to_js
+            js.should =~ %r/s.addBranch\('master',0\);.*s.addBranch\('branch1',1\);.*s.addBranch\('branch2',2\);/m
+          end
         end
       end
     end
