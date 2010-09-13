@@ -8,7 +8,7 @@ module Swimlanes
 
     def to_js *arguments
       options = arguments.last.is_a?(Hash) ? arguments.pop : {}
-      branches = arguments
+      branches = arguments.empty? ? list_branches : arguments
 
       options[:function] ||= 'swim'
 
@@ -26,6 +26,12 @@ module Swimlanes
 
     def run cmd
       %x(#{cmd})
+    end
+
+    def list_branches
+      Dir.chdir path do
+        %x(git branch | cut -c3-).split
+      end
     end
   end
 end
